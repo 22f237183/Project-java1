@@ -1,0 +1,199 @@
+import java.io.IOException; 
+
+import java.net.ServerSocket; 
+
+import java.net.Socket; 
+
+ 
+
+public class Server1 { 
+
+    public static void main(String[] args) { 
+
+        try (ServerSocket serverListener = new ServerSocket(5050)) { 
+
+            System.out.println("Bonus Calculator Server started."); 
+
+            
+
+            while (true) { 
+
+                Socket userSocket = serverListener.accept(); 
+
+                Thread worker = new Thread(new Server2(userSocket)); 
+
+                worker.start(); 
+
+            } 
+
+ 
+
+        } catch (IOException ex) { 
+
+            System.out.println("Server failure: " + ex.getMessage()); 
+
+        } 
+
+    } 
+
+} 
+
+ Code 2:
+
+import java.io.DataInputStream; 
+
+import java.io.DataOutputStream; 
+
+import java.net.Socket; 
+
+import java.sql.Connection; 
+
+import java.sql.DriverManager; 
+
+import java.sql.PreparedStatement; 
+
+import java.sql.ResultSet; 
+
+ 
+
+public class Server2 implements Runnable { 
+
+ 
+
+    private final Socket user; 
+
+ 
+
+    public Server2(Socket userSocket) { 
+
+        this.user = userSocket; 
+
+    } 
+
+ 
+
+    @Override 
+
+    public void run() { 
+
+        try { 
+
+            DataInputStream input = new DataInputStream(user.getInputStream()); 
+
+            double salesAmount = input.readDouble(); 
+
+            double loyalty = input.readDouble(); 
+
+            double teamTotal = input.readDouble(); 
+
+ 
+
+            double commission = calculateCommission(salesAmount, loyalty, teamTotal); 
+
+ 
+
+            DataOutputStream output = new DataOutputStream(user.getOutputStream()); 
+
+            output.writeDouble(commission); 
+
+            user.close(); 
+
+ 
+
+        } catch (Exception e) { 
+
+            System.out.println("Service error: " + e.getMessage()); 
+
+        } 
+
+    } 
+
+ 
+
+    private double calculateCommission(double sales, double retention, double teamSales) { 
+
+        double rate = 0.0; 
+
+        double fixedBonus = 0.0; 
+
+ 
+
+        
+
+        String chargeCode; 
+
+        if (sales > 25000) { 
+
+            chargeCode = "CR1"; 
+
+        } else if (sales >= 15000) { 
+
+            chargeCode = "CR2"; 
+
+        } else { 
+
+            chargeCode = "CR3"; 
+
+        } 
+
+ 
+
+        
+
+        try { 
+
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:commissions.db"); 
+
+            String query = "SELECT rate, bonus FROM commission_rules WHERE charge_code = ?"; 
+
+            PreparedStatement stmt = conn.prepareStatement(query); 
+
+            stmt.setString(1, chargeCode); 
+
+            ResultSet rs = stmt.executeQuery(); 
+
+ 
+
+            if (rs.next()) { 
+
+                rate = rs.getDouble("rate"); 
+
+                fixedBonus = rs.getDouble("bonus"); 
+
+            } 
+
+ 
+
+            
+
+            rs.close(); 
+
+            stmt.close(); 
+
+            conn.close(); 
+
+        } catch (Exception e) { 
+
+            System.out.println("Database error: " + e.getMessage()); 
+
+        } 
+
+ 
+
+        
+
+        double loyaltyBonus = (retention > 80) ? 200 : (retention >= 60 ? 100 : 0); 
+
+ 
+
+        
+
+        double boost = (teamSales > 200000) ? 1.1 : 
+
+                       (teamSales >= 100000 ? 1.05 : 1.0); 
+
+ 
+
+        return (sales * rate + fixedBonus + loyaltyBonus) * boost; 
+
+    } 
