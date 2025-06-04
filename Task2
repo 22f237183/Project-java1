@@ -1,0 +1,91 @@
+import java.io.DataInputStream; 
+
+import java.io.DataOutputStream; 
+
+import java.net.Socket; 
+
+import java.util.Scanner; 
+
+ 
+
+Public class Client1 implements Runnable { 
+
+ 
+
+@override 
+
+Public void run() { 
+
+ 
+
+        try (Socket connection = new Socket("localhost", 5050)) { 
+
+            System.out.println("Connection established with the server."); 
+
+ 
+
+            Scanner inputScanner = new Scanner(System.in); 
+
+            
+
+            System.out.print("Individual Sales Amount: "); 
+
+            double sales = inputScanner.nextDouble(); 
+
+            
+
+            System.out.print("Retention Score (0 to 100): "); 
+
+            double retention = inputScanner.nextDouble(); 
+
+            
+
+            System.out.print("Total Team Sales: "); 
+
+            double team = inputScanner.nextDouble(); 
+
+ 
+
+            DataOutputStream toServer = new DataOutputStream(connection.getOutputStream()); 
+
+            toServer.writeDouble(sales); 
+
+            toServer.writeDouble(retention); 
+
+            toServer.writeDouble(team); 
+
+ 
+
+            DataInputStream fromServer = new DataInputStream(connection.getInputStream()); 
+
+            double earnedCommission = fromServer.readDouble(); 
+
+            System.out.printf("Your earned commission is: %.2f OMR%n", earnedCommission); 
+
+ 
+
+        } catch (Exception ex) { 
+
+            System.out.println("Client error: " + ex.getMessage()); 
+
+            
+
+            
+
+        } 
+
+    } 
+
+public  class Client1Main { 
+
+Public static void main(String[] args ) 
+
+Thread clientThread = new Thread(new Client1()}: 
+
+ClientThread.start(): 
+
+ 
+
+} 
+
+ } 
